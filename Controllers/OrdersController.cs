@@ -42,14 +42,18 @@ namespace MonitoringPOC.Controllers
         {
             try
             {
+                // Log informativo -> va in 'traces'
                 _logger.LogInformation("Ricevuto ordine {OrderId}", order.OrderId);
                 
                 await _publisher.PublishOrderAsync(order);
+                
+                // Log di successo -> va in 'traces'
                 _logger.LogInformation("Ordine pubblicato con successo su ServiceBus. OrderId: {OrderId}", order.OrderId);
                 return Ok(new { message = "Ordine ricevuto e pubblicato", orderId = order.OrderId });
             }
             catch (Exception ex)
             {
+                // Log con eccezione -> va in 'exceptions'
                 _logger.LogError(ex, "Errore durante la pubblicazione dell'ordine {OrderId}", order.OrderId);
                 return BadRequest(new { 
                     error = "Errore durante la pubblicazione", 
