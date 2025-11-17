@@ -20,11 +20,14 @@ jobs:
         with:
           dotnet-version: '8.0'
 
+      - name: Restore dependencies
+        run: dotnet restore
+
       - name: Build with dotnet
         run: dotnet build --configuration Release
 
-      - name: dotnet publish
-        run: dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=false -o "./publish"
+      - name: Publish app
+        run: dotnet publish -c Release -o ./publish
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
@@ -44,7 +47,8 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: publish-app
-      
+          path: ./publish   # ✅ Fix: specifica la cartella di destinazione
+
       - name: Login to Azure
         uses: azure/login@v2
         with:
@@ -58,4 +62,4 @@ jobs:
         with:
           app-name: 'monitoringpocapp'
           slot-name: 'Production'
-          package: ./publish
+          package: ./publish   # ✅ Ora esiste perché abbiamo estratto l’artifact qui
