@@ -63,3 +63,4 @@ jobs:
           app-name: 'observableapp-fxbcaqekc9bqb4hm'
           # oppure solo il nome “observableapp-fxbcaqekc9bqb4hm” senza dominio
           package: ./publish-output
+
