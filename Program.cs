@@ -39,13 +39,13 @@ builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
-    app.UseSwagger();
-    app.UseSwaggerUI();
+app.UseRouting();         // 1️⃣
 
-app.UseRouting();
+app.UseAuthorization();   // 2️⃣
 
-app.UseAuthorization();
+app.MapControllers();     // 3️⃣
 
-app.MapControllers();
+app.UseSwagger();         // 4️⃣
+app.UseSwaggerUI();       // 5️⃣
 
 app.Run();
