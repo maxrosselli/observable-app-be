@@ -30,14 +30,5 @@ namespace MonitoringPOC.Utils
         }
     }
 
-    // Mock publisher per sviluppo locale
-    public class MockServiceBusPublisher : IServiceBusPublisher
-    {
-        public Task PublishOrderAsync(OrderDto order)
-        {
-            // Mock - non invia realmente il messaggio
-            Console.WriteLine($"[MOCK] Publishing order: {JsonSerializer.Serialize(order)}");
-            return Task.CompletedTask;
-        }
-    }
+
 }

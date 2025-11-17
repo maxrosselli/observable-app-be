@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Builder;
+﻿using System;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Configuration;
 using Azure.Messaging.ServiceBus;
@@ -15,23 +16,13 @@ builder.Services.AddSingleton<ServiceBusClient>(provider =>
     var connectionString = builder.Configuration.GetConnectionString("ServiceBus");
     if (string.IsNullOrEmpty(connectionString))
     {
-        // Per sviluppo locale - usa una connection string di default o mock
-        return null; // Temporaneo per debug
+        throw new InvalidOperationException("ServiceBus connection string non trovata");
     }
     return new ServiceBusClient(connectionString);
 });
 
 // Registrazione del publisher ServiceBus
-builder.Services.AddScoped<IServiceBusPublisher>(provider =>
-{
-    var client = provider.GetService<ServiceBusClient>();
-    if (client == null)
-    {
-        // Mock publisher per sviluppo locale
-        return new MockServiceBusPublisher();
-    }
-    return new ServiceBusPublisher(client);
-});
+builder.Services.AddScoped<IServiceBusPublisher, ServiceBusPublisher>();
 
 // 🔹 Aggiungi Swagger
 builder.Services.AddEndpointsApiExplorer();
