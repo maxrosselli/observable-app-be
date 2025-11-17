@@ -48,9 +48,9 @@ jobs:
       - name: Login to Azure
         uses: azure/login@v2
         with:
-          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID }}
-          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID }}
-          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID }}
+          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_5A9E19EFB8B94A5DAF045BF8556C51F9 }}
+          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_9BE6B860768A4A8982E8085F87FBD55B }}
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_B150450F605248928D00EDF1F49C1D95 }}
 
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v3
@@ -58,3 +58,4 @@ jobs:
           app-name: 'observableapp'
           resource-group: 'MonitoringPOC'
           package: ./app.zip
+
