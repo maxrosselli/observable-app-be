@@ -9,9 +9,6 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-
     steps:
       - uses: actions/checkout@v4
 
@@ -27,40 +24,37 @@ jobs:
         run: dotnet build --configuration Release --no-restore
 
       - name: Publish
-        run: dotnet publish -c Release -o ./publish-output -r linux-x64 --self-contained false
+        run: dotnet publish -c Release -o ./publish-output --runtime linux-x64 --self-contained false
+
+      - name: Zip artifact
+        run: cd publish-output && zip -r ../app.zip .
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: net-app
-          path: ./publish-output
+          path: ./app.zip
 
   deploy:
     runs-on: ubuntu-latest
     needs: build
-    permissions:
-      id-token: write
-      contents: read
-
     steps:
       - name: Download artifact
         uses: actions/download-artifact@v4
         with:
           name: net-app
-          path: ./publish-output
+          path: .
 
       - name: Login to Azure
         uses: azure/login@v2
         with:
-          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_5A9E19EFB8B94A5DAF045BF8556C51F9 }}
-          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_9BE6B860768A4A8982E8085F87FBD55B }}
-          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_B150450F605248928D00EDF1F49C1D95 }}
+          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID }}
+          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID }}
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID }}
 
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v3
         with:
-          app-name: 'observableapp'           # Nome esatto della Web App
-          resource-group: 'MonitoringPOC'     # Resource group corretto
-          package: ./publish-output
-
-
+          app-name: 'observableapp'
+          resource-group: 'MonitoringPOC'
+          package: ./app.zip
