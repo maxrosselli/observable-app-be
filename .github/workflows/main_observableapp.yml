@@ -59,6 +59,7 @@ jobs:
         id: deploy-to-webapp
         uses: azure/webapps-deploy@v3
         with:
-          app-name: 'observableapp-fxbcaqekc9bqb4hm.italynorth-01.azurewebsites.net'
+          app-name: 'observableapp-fxbcaqekc9bqb4hm'
           slot-name: 'Production'
           package: .
+
