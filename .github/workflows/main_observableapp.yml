@@ -27,7 +27,7 @@ jobs:
         run: dotnet build --configuration Release --no-restore
 
       - name: Publish
-        run: dotnet publish -c Release -o ./publish-output
+        run: dotnet publish -c Release -o ./publish-output -r linux-x64 --self-contained false
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -62,4 +62,5 @@ jobs:
           app-name: 'observableapp'           # Nome esatto della Web App
           resource-group: 'MonitoringPOC'     # Resource group corretto
           package: ./publish-output
+
 
