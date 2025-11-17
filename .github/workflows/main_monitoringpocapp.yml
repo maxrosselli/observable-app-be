@@ -1,0 +1,64 @@
+name: Build and deploy ASP.Net Core app to Azure Web App - observableapp
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up .NET Core
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Build with dotnet
+        run: dotnet build --configuration Release --no-restore
+
+      - name: Publish app
+        run: dotnet publish -c Release -o ./publish --no-build
+
+      - name: Upload artifact for deployment job
+        uses: actions/upload-artifact@v4
+        with:
+          name: publish-app
+          path: ./publish
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Download artifact from build job
+        uses: actions/download-artifact@v4
+        with:
+          name: publish-app
+          path: ./publish
+
+      - name: Login to Azure
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_389118D6AA2649D7B59DB8967366ED42 }}
+          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_EEB1885A8441448B94A36562CBFBE47B }}
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_B5756083EC284860B26542D6751B2B9B }}
+
+      - name: Deploy to Azure Web App (Linux)
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: 'observableapp'
+          slot-name: 'Production'
+          package: ./publish
