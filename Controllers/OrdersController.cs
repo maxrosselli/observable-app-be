@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.ApplicationInsights;
 using Microsoft.AspNetCore.Mvc;
@@ -45,7 +47,7 @@ namespace MonitoringPOC.Controllers
             try
             {
                 // 🎯 Log via ILogger (va automaticamente in 'traces' con il provider configurato)
-                _logger.LogInformation("Ricevuto ordine {OrderId}", order.OrderId);
+                //_logger.LogInformation("Ricevuto ordine {OrderId}", order.OrderId);
                 
                 // 🎯 Trace esplicito via TelemetryClient (va direttamente in 'traces')
                 _telemetryClient.TrackTrace($"Processing order: {order.OrderId}");
@@ -53,7 +55,7 @@ namespace MonitoringPOC.Controllers
                 await _publisher.PublishOrderAsync(order);
                 
                 // 🎯 Log di successo (va in 'traces')
-                _logger.LogInformation("Ordine pubblicato con successo su ServiceBus. OrderId: {OrderId}", order.OrderId);
+                //_logger.LogInformation("Ordine pubblicato con successo su ServiceBus. OrderId: {OrderId}", order.OrderId);
                 
                 // 🎯 Trace di successo esplicito
                 _telemetryClient.TrackTrace($"Order {order.OrderId} successfully published to ServiceBus");
@@ -63,7 +65,7 @@ namespace MonitoringPOC.Controllers
             catch (Exception ex)
             {
                 // 🎯 Log con eccezione (va in 'exceptions')
-                _logger.LogError(ex, "Errore durante la pubblicazione dell'ordine {OrderId}", order.OrderId);
+                //_logger.LogError(ex, "Errore durante la pubblicazione dell'ordine {OrderId}", order.OrderId);
                 
                 // 🎯 Exception esplicita via TelemetryClient (va in 'exceptions')
                 _telemetryClient.TrackException(ex);
@@ -73,6 +75,111 @@ namespace MonitoringPOC.Controllers
                     message = ex.Message,
                     orderId = order.OrderId 
                 });
+            }
+        }
+
+        [HttpPost("loadtest")]
+        public async Task<IActionResult> SimulaCaricoPesante()
+        {
+            var stopwatch = Stopwatch.StartNew();
+            var batchId = Guid.NewGuid().ToString("N")[..8];
+            
+            try
+            {
+                // Genera 10 ordini mock
+                var ordini = GeneraOrdiniMock(10, batchId);
+                
+                // Lista per tracciare i risultati
+                var risultati = new List<Task<(bool Success, string OrderId, string Error)>>();
+
+                // Esegui tutti gli ordini in parallelo
+                foreach (var ordine in ordini)
+                {
+                    risultati.Add(ProcessaSingoloOrdine(ordine));
+                }
+
+                // Aspetta che tutti completino
+                var esiti = await Task.WhenAll(risultati);
+
+                stopwatch.Stop();
+
+                // Analizza risultati
+                var successi = esiti.Count(e => e.Success);
+                var fallimenti = esiti.Count(e => !e.Success);
+                
+                _telemetryClient.TrackTrace($"✅ Simulazione completata - BatchId: {batchId}, Successi: {successi}, Fallimenti: {fallimenti}, Tempo: {stopwatch.ElapsedMilliseconds}ms");
+                //_logger.LogInformation("Simulazione completata - BatchId: {BatchId}, Successi: {Successi}, Fallimenti: {Fallimenti}, Tempo: {Tempo}ms", 
+                    //batchId, successi, fallimenti, stopwatch.ElapsedMilliseconds);
+
+                return Ok(new 
+                { 
+                    batchId = batchId,
+                    totaleOrdini = ordini.Count,
+                    successi = successi,
+                    fallimenti = fallimenti,
+                    tempoTotaleMs = stopwatch.ElapsedMilliseconds,
+                    ordiniProcessati = esiti.Select(e => new 
+                    { 
+                        orderId = e.OrderId, 
+                        success = e.Success, 
+                        error = e.Error 
+                    })
+                });
+            }
+            catch (Exception ex)
+            {
+                stopwatch.Stop();
+                _telemetryClient.TrackException(ex);
+                _logger.LogError(ex, "Errore durante la simulazione del carico pesante - BatchId: {BatchId}", batchId);
+                
+                return BadRequest(new 
+                { 
+                    error = "Errore durante la simulazione del carico pesante",
+                    batchId = batchId,
+                    message = ex.Message,
+                    tempoMs = stopwatch.ElapsedMilliseconds
+                });
+            }
+        }
+
+        private List<OrderDto> GeneraOrdiniMock(int numero, string batchId)
+        {
+            var ordini = new List<OrderDto>();
+            var destinazioni = new[] { "Milano", "Roma", "Napoli", "Torino", "Palermo", "Genova", "Bologna", "Firenze", "Bari", "Catania" };
+            var tipologie = new[] { "Electronics", "Clothing", "Food", "Books", "Sports" };
+            var random = new Random();
+
+            for (int i = 1; i <= numero; i++)
+            {
+                ordini.Add(new OrderDto
+                {
+                    OrderId = $"{batchId}-{i:D3}",
+                    Destination = destinazioni[random.Next(destinazioni.Length)],
+                    ItemType = tipologie[random.Next(tipologie.Length)],
+                    WeightKg = Math.Round(random.NextDouble() * 50 + 1, 2),
+                    Priority = random.Next(1, 6).ToString()
+                });
+            }
+
+            return ordini;
+        }
+
+        private async Task<(bool Success, string OrderId, string Error)> ProcessaSingoloOrdine(OrderDto ordine)
+        {
+            try
+            {
+                await _publisher.PublishOrderAsync(ordine);
+                
+                _telemetryClient.TrackTrace($"✅ Ordine pubblicato: {ordine.OrderId}");
+                
+                return (true, ordine.OrderId, null);
+            }
+            catch (Exception ex)
+            {
+                _telemetryClient.TrackException(ex);
+                _logger.LogError(ex, "Errore nell'elaborazione dell'ordine {OrderId}", ordine.OrderId);
+                
+                return (false, ordine.OrderId, ex.Message);
             }
         }
     }
