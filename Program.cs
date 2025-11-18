@@ -2,13 +2,17 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using Azure.Messaging.ServiceBus;
 using MonitoringPOC.Utils;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
+
+// Application Insights - Telemetry + Logging Provider
 builder.Services.AddApplicationInsightsTelemetry();
+builder.Logging.AddApplicationInsights();
 
 // Configurazione Azure Service Bus
 builder.Services.AddSingleton<ServiceBusClient>(provider =>
