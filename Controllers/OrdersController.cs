@@ -46,6 +46,10 @@ namespace MonitoringPOC.Controllers
         {
             try
             {
+                if (order.ItemType == "FAIL")
+                {
+                    throw new Exception("Errore simulato per demo");
+                }
                 // 🎯 Log via ILogger (va automaticamente in 'traces' con il provider configurato)
                 //_logger.LogInformation("Ricevuto ordine {OrderId}", order.OrderId);
                 
