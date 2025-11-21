@@ -74,7 +74,7 @@ namespace MonitoringPOC.Controllers
                 // 🎯 Exception esplicita via TelemetryClient (va in 'exceptions')
                 _telemetryClient.TrackException(ex);
                 
-                return BadRequest(new { 
+                return StatusCode(500, new { 
                     error = "Errore durante la pubblicazione", 
                     message = ex.Message,
                     orderId = order.OrderId 
